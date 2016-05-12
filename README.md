@@ -1,9 +1,9 @@
-# GeoConvert
-============
+#GeoConvert
+
 converting between geojson and gis type data(kml, gpx)
 
-#Usage
-------
+Usage
+-----
 kml to geojson
 ```javascript
 GeoConvert.kml2Geojson(kml);
