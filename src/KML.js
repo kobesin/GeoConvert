@@ -35,9 +35,23 @@
       case "kml":
       case "Document":
       case "Folder":
-        for (var c in contain) {
-          kmlElementHandle(c, contain[c], geojson, style)
+        var keys = Object.keys(contain);
+        var styleIndex = keys.indexOf("Style");
+        var styleMapIndex = keys.indexOf("StyleMap");
+
+        if (styleMapIndex > -1) {
+          keys.splice(styleMapIndex, 1);
+          kmlElementHandle("styleMapIndex", contain.StyleMap, geojson, style);
         }
+
+        if (styleIndex > -1) {
+          keys.splice(styleIndex, 1);
+          kmlElementHandle("Style", contain.Style, geojson, style);
+        }
+
+        keys.forEach(function(c){
+          kmlElementHandle(c, contain[c], geojson, style);
+        });
         break;
       case "Placemark":
         if (contain.forEach) {
@@ -57,7 +71,7 @@
             }
           });
         } else {
-          if (style["@id"]) {
+          if (contain["@id"]) {
             style[contain["@id"]] = contain;
           }
         }
@@ -154,7 +168,8 @@
       feature.geometry = placemark2Geometry(placemark);
     }
 
-    var geojsonStyle;
+    var geojsonStyle = placemark.Style;
+
     if (placemark.styleUrl) {
       var styleId = placemark.styleUrl.replace("#", "");
       var geojsonStyle;
