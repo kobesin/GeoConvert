@@ -80,13 +80,13 @@
 		var xmax = dataView.getFloat64(52, true);
 		var ymax = dataView.getFloat64(60, true);
 
-		var transitions;
-		if (projection && !/GCS_WGS_1984|WGS84/g.test(projection)) {
-			transitions = new Transitions(projection, proj4.WGS84);
-			geojson.bbox = transitions.trans([xmin, ymin]).concat(transitions.trans([xmax, ymax]));
-		} else {
-			geojson.bbox = [xmin, ymin, xmax, ymax];
-		}
+		// var zmin = dataView.getFloat64(68, true);
+		// var zmax = dataView.getFloat64(76, true);
+		// var mmin = dataView.getFloat64(84, true);
+		// var mmax = dataView.getFloat64(92, true);
+
+		var transitions = projection && !/GCS_WGS_1984|WGS84/g.test(projection) ? new Transitions(projection, proj4.WGS84) : transitions;
+		geojson.bbox = readBoxRecord(dataView, 36, transitions);
 
 		//Record
 		var byteOffset = 100;
@@ -100,7 +100,6 @@
 	function readShpFileRecord(dataView, byteOffset, transitions) {
 		var result = {};
 		var feature = {};
-		var geometry = {};
 		feature.type = "Feature";
 
 		//Record Number
@@ -120,39 +119,27 @@
 				break;
 
 			case 1: //Point
+			case 11: //PointZ
+			case 21: //PointM
+
 				readRecord = readPointRecord;
 				break;
 
 			case 3: //PolyLine
+			case 13: //PolyLineZ
+			case 23: //PolyLineM
 				readRecord = readPolylineRecord;
 				break;
 
 			case 5: //Polygon
+			case 15: //PolygonZ
+			case 25: //PolygonM
 				readRecord = readPolygonRecord;
 				break;
 
 			case 8: //MultiPoint
-				break;
-
-			case 11: //PointZ
-				break;
-
-			case 13: //PolyLineZ
-				break;
-
-			case 15: //PolygonZ
-				break;
-
 			case 18: //MultiPointZ
-				break;
-
-			case 21: //PointM
-				break;
-
-			case 23: //PolyLineM
-				break;
-
-			case 25: //PolygonM
+				readRecord = readMultiPointRecord;
 				break;
 
 			case 28: //MultiPointM
@@ -163,15 +150,41 @@
 			default:
 				break;
 		}
-		var record = readRecord(dataView, byteOffset, transitions);
-		geometry.type = record.type;
-		geometry.coordinates = record.coordinates;
-		byteOffset = record.byteOffset;
 
-		feature.geometry = geometry;
+		if (readRecord) {
+			var geometry = {};
+			var record = readRecord(dataView, byteOffset, transitions);
+			geometry.type = record.type;
+			geometry.coordinates = record.coordinates;
+
+			if (record.box) feature.bbox = record.box;
+			feature.geometry = geometry;
+		}
+
 		result.feature = feature;
-		result.byteOffset = byteOffset;
+
+		//The content length for a record is the length of the record contents section measured in
+		//16-bit words. Each record, therefore, contributes (4 + content length) 16-bit words
+		//toward the total length of the file, as stored at Byte 24 in the file header.
+		result.byteOffset = byteOffset + contentLength * 2 - 4;
 		return result;
+	}
+
+	//box type
+	function readBoxRecord(dataView, byteOffset, transitions) {
+		var xmin = dataView.getFloat64(byteOffset, true);
+		var ymin = dataView.getFloat64(byteOffset + 8, true);
+		var xmax = dataView.getFloat64(byteOffset + 16, true);
+		var ymax = dataView.getFloat64(byteOffset + 24, true);
+
+		var box;
+		if (transitions) {
+			box = transitions.trans([xmin, ymin]).concat(transitions.trans([xmax, ymax]));
+		} else {
+			box = [xmin, ymin, xmax, ymax];
+		}
+
+		return box;
 	}
 
 	//point type
@@ -181,7 +194,61 @@
 		var x = dataView.getFloat64(byteOffset, true);
 		var y = dataView.getFloat64(byteOffset + 8, true);
 		byteOffset += 16;
-		record.byteOffset = byteOffset;
+		record.type = "Point";
+		record.coordinates = transitions ? transitions.trans([x, y]) : [x, y];
+
+		return record;
+	}
+
+	//multipoint type
+	function readMultiPointRecord(dataView, byteOffset, transitions) {
+		var record = {};
+
+		var box = readBoxRecord(dataView, byteOffset, transitions);
+		var numPoints = dataView.getInt32(byteOffset + 32, true);
+		var points = [];
+		var coordinates = [];
+
+		byteOffset = byteOffset + 36;
+		for (var i = 0; i < numPoints; i++) {
+			var x = dataView.getFloat64(byteOffset, true);
+			var y = dataView.getFloat64(byteOffset + 8, true);
+
+			var point = transitions ? transitions.trans([x, y]) : [x, y];
+			points.push(point);
+			byteOffset += 16;
+		}
+
+		record.type = "MultiPoint";
+		record.box = box;
+		record.coordinates = points;
+
+		return record;
+	}
+
+	//pointM type
+	function readPointMRecord(dataView, byteOffset, transitions) {
+		var record = {};
+
+		var x = dataView.getFloat64(byteOffset, true);
+		var y = dataView.getFloat64(byteOffset + 8, true);
+		// var m = dataView.getFloat64(byteOffset + 16, true);
+		byteOffset += 24;
+		record.type = "Point";
+		record.coordinates = transitions ? transitions.trans([x, y]) : [x, y];
+
+		return record;
+	}
+
+	//pointZ type
+	function readPointZRecord(dataView, byteOffset, transitions) {
+		var record = {};
+
+		var x = dataView.getFloat64(byteOffset, true);
+		var y = dataView.getFloat64(byteOffset + 8, true);
+		// var z = dataView.getFloat64(byteOffset + 16, true);
+		// var m = dataView.getFloat64(byteOffset + 24, true);
+		byteOffset += 32;
 		record.type = "Point";
 		record.coordinates = transitions ? transitions.trans([x, y]) : [x, y];
 
@@ -192,6 +259,7 @@
 	function readPolylineRecord(dataView, byteOffset, transitions) {
 		var record = {};
 
+		var box = readBoxRecord(dataView, byteOffset, transitions);
 		var numParts = dataView.getInt32(byteOffset + 32, true);
 		var numPoints = dataView.getInt32(byteOffset + 36, true);
 		var parts = [];
@@ -219,7 +287,9 @@
 			}
 		}
 
-		record.byteOffset = byteOffset;
+		record.box = box;
+		record.numPoints = numPoints;
+
 		if (numParts === 1) {
 			record.type = "LineString";
 			record.coordinates = coordinates[0];
@@ -235,6 +305,7 @@
 	function readPolygonRecord(dataView, byteOffset, transitions) {
 		var record = {};
 
+		var box = readBoxRecord(dataView, byteOffset, transitions);
 		var numParts = dataView.getInt32(byteOffset + 32, true);
 		var numPoints = dataView.getInt32(byteOffset + 36, true);
 		var parts = [];
@@ -285,7 +356,9 @@
 			}
 		}
 
-		record.byteOffset = byteOffset;
+		record.box = box;
+		record.numPoints = numPoints;
+
 		if (numParts === 1) {
 			record.type = "Polygon";
 			record.coordinates = rings[0];
@@ -352,22 +425,5 @@
 			}
 			geojson.features[i].properties = record;
 		}
-
-		// //Record
-		// var numFields = fields.length;
-		// var records = [];
-		// for (var i = 0; i < numRecords; i++) {
-		// 	var record = {};
-		// 	byteOffset = headerLength + i * recordLength;
-		// 	//skip delete code
-		// 	byteOffset += 1;
-		// 	for (var j = 0; j < numFields; j++) {
-		// 		var recordField = fields[j];
-		// 		var value = decode.decode(arrayBuffer.slice(byteOffset, byteOffset + recordField.fieldLength)).trim();
-		// 		record[recordField.name] = value;
-		// 		byteOffset += recordField.fieldLength;
-		// 	}
-		// 	records.push(record);
-		// }
 	}
 })(window, document);
