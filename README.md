@@ -1,6 +1,15 @@
 #GeoConvert
 
-converting between geojson and gis type data(kml, gpx)
+converting between geojson and gis type data(kml, gpx, shapefile)
+
+Rreference the JavaScript file manually:
+```html
+<script src="dist/GeoConvert.min.js"></script>
+```
+note that coordinate transformations depend on proj4.js (this means proj4.js must be included before including the file).
+```html
+<script src="lib/proj4.js"></script>
+```
 
 Usage
 -----
