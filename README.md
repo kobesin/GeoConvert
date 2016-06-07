@@ -38,6 +38,9 @@ shapefile to geojson
 var shapefile = {};
 shapefile.shp = arrayBuffer_shp;
 shapefile.dbf = arrayBuffer_dbf;
+
+//optional
 shapefile.prj = arrayBuffer_prj;
+
 GeoConvert.shapefile2Geojson(shapefile);
 ```
