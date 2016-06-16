@@ -210,23 +210,29 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
       case "kml":
       case "Document":
       case "Folder":
-        var keys = Object.keys(contain);
-        var styleIndex = keys.indexOf("Style");
-        var styleMapIndex = keys.indexOf("StyleMap");
+        if (!contain.forEach) {
+          var keys = Object.keys(contain);
 
-        if (styleMapIndex > -1) {
-          keys.splice(styleMapIndex, 1);
-          kmlElementHandle("styleMapIndex", contain.StyleMap, geojson, style);
+          var styleIndex = keys.indexOf("Style");
+          if (styleMapIndex > -1) {
+            keys.splice(styleMapIndex, 1);
+            kmlElementHandle("StyleMap", contain.StyleMap, geojson, style);
+          }
+
+          var styleMapIndex = keys.indexOf("StyleMap");
+          if (styleIndex > -1) {
+            keys.splice(styleIndex, 1);
+            kmlElementHandle("Style", contain.Style, geojson, style);
+          }
+
+          keys.forEach(function(c) {
+            kmlElementHandle(c, contain[c], geojson, style);
+          });
+        } else {
+          contain.forEach(function(c) {
+            kmlElementHandle(tag, c, geojson, style);
+          });
         }
-
-        if (styleIndex > -1) {
-          keys.splice(styleIndex, 1);
-          kmlElementHandle("Style", contain.Style, geojson, style);
-        }
-
-        keys.forEach(function(c){
-          kmlElementHandle(c, contain[c], geojson, style);
-        });
         break;
       case "Placemark":
         if (contain.forEach) {
@@ -343,75 +349,89 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
       feature.geometry = placemark2Geometry(placemark);
     }
 
-    var geojsonStyle = placemark.Style;
-
+    var geojsonStyle = placemark.Style || {};
     if (placemark.styleUrl) {
       var styleId = placemark.styleUrl.replace("#", "");
-      var geojsonStyle;
 
       if (style[styleId]) {
+        var mStyle;
+        var styleId2;
+
         if (style[styleId].Pair) {
-          var styleId2;
           style[styleId].Pair.forEach(function(style2) {
             if (style2.key && style2.key === "normal") {
               styleId2 = style2.styleUrl.replace("#", "");
             }
           });
-          geojsonStyle = style[styleId2];
+          mStyle = style[styleId2];
         } else {
-          geojsonStyle = style[styleId];
+          mStyle = style[styleId];
         }
+
+        var tempKeys = Object.keys(Object.assign({}, geojsonStyle, mStyle));
+        tempKeys.forEach(function(tk) {
+          var type = typeof geojsonStyle[tk];
+          if (type === "object") {
+            geojsonStyle[tk] = Object.assign({}, geojsonStyle[tk], mStyle[tk]);
+          } else if (type === "undefined") {
+            geojsonStyle[tk] = mStyle[tk];
+          }
+        });
       }
     }
 
-    if (geojsonStyle) {
-      for (var gs in geojsonStyle) {
-        switch (gs) {
-          case "IconStyle":
-            var iconUrl = geojsonStyle[gs].Icon.href;
-            var scale = parseFloat(geojsonStyle[gs].scale);
+    for (var styleKey in geojsonStyle) {
+      switch (styleKey) {
+        case "IconStyle":
+          var iconUrl = geojsonStyle.IconStyle.Icon.href;
+          var scale = geojsonStyle.IconStyle.scale;
+          var color = geojsonStyle.IconStyle.color;
 
-            if (iconUrl) {
-              feature.style.iconUrl = iconUrl;
-            }
-            if (scale) {
-              feature.style.scale = scale;
-            }
-            if (geojsonStyle[gs].hotSpot) {
-              var hotSpotX = parseFloat(geojsonStyle[gs].hotSpot["@x"]);
-              var hotSpotY = parseFloat(geojsonStyle[gs].hotSpot["@y"]);
-              feature.style.iconAnchor = [hotSpotX, hotSpotY];
-            }
-            break;
-          case "LineStyle":
-            var color = abgr2Color(geojsonStyle[gs].color);
-            var width = parseFloat(geojsonStyle[gs].width);
+          if (iconUrl) {
+            feature.style.iconUrl = iconUrl;
+          }
+          if (scale) {
+            feature.style.scale = parseFloat(scale);
+          }
+          if (color) {
+            color = abgr2Color(color);
+            feature.style.color = color.hex;
+            feature.style.opacity = color.opacity;
+          }
+          if (geojsonStyle.IconStyle.hotSpot) {
+            var hotSpotX = parseFloat(geojsonStyle.IconStyle.hotSpot["@x"]);
+            var hotSpotY = parseFloat(geojsonStyle.IconStyle.hotSpot["@y"]);
+            feature.style.iconAnchor = [hotSpotX, hotSpotY];
+          }
+          break;
+        case "LineStyle":
+          var color = abgr2Color(geojsonStyle.LineStyle.color);
+          var width = parseFloat(geojsonStyle.LineStyle.width);
 
-            if (color) {
-              feature.style.color = color.hex;
-              feature.style.opacity = color.opacity;
-            }
-            if (width) {
-              feature.style.weight = width;
-            }
-            break;
-          case "PolyStyle":
-            var color = abgr2Color(geojsonStyle[gs].color);
-            var fill = parseInt(fill);
-            var stroke = parseInt(geojsonStyle[gs].outline);
+          if (color) {
+            feature.style.color = color.hex;
+            feature.style.opacity = color.opacity;
+          }
+          if (width) {
+            feature.style.weight = width;
+          }
+          break;
+        case "PolyStyle":
+          var color = abgr2Color(geojsonStyle.PolyStyle.color);
+          var fill = parseInt(fill);
+          var stroke = parseInt(geojsonStyle.PolyStyle.outline);
 
-            if (color) {
-              feature.style.fillColor = color.hex;
-              feature.style.fillOpacity = color.opacity;
-            }
-            if (fill) {
-              feature.style.fill = fill;
-            }
-            if (stroke) {
-              feature.style.stroke = stroke;
-            }
-            break;
-        }
+          if (color) {
+            feature.style.fillColor = color.hex;
+            feature.style.fillOpacity = color.opacity;
+          }
+          if (fill) {
+            feature.style.fill = fill;
+          }
+          if (stroke) {
+            feature.style.stroke = stroke;
+          }
+          break;
       }
     }
 
@@ -869,7 +889,7 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 })(window, document);
 ;
 (function(window, document, undefined) {
-  //kml2geojson
+  //gpx2geojson
   GeoConvert.gpx2Geojson = function(gpx, toString) {
     var json;
 
@@ -1130,6 +1150,7 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 	};
 
 	//shapefile2Geojson. shapefile need contain .shp, .dbf.
+	//shp & dbf are arrayBuffer.
 	GeoConvert.shapefile2Geojson = function(file, toString) {
 		var geojson = shapefileHandle(file);
 

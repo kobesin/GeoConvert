@@ -22,6 +22,7 @@
 	};
 
 	//shapefile2Geojson. shapefile need contain .shp, .dbf.
+	//shp & dbf are arrayBuffer.
 	GeoConvert.shapefile2Geojson = function(file, toString) {
 		var geojson = shapefileHandle(file);
 

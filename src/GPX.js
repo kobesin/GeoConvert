@@ -1,6 +1,6 @@
 ;
 (function(window, document, undefined) {
-  //kml2geojson
+  //gpx2geojson
   GeoConvert.gpx2Geojson = function(gpx, toString) {
     var json;
 
