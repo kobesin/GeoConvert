@@ -330,45 +330,14 @@
         var coordinates = [];
 
         placemark.Polygon.forEach(function(polygon) {
-          var coordinates2 = [];
-          ['outerBoundaryIs', 'innerBoundaryIs'].forEach(function(boundaryIs) {
-            var boundary = polygon[boundaryIs];
-            if (boundary) {
-              var boundaryCoordinates = [];
-              var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
-
-              coordinatesString.split(" ").forEach(function(pointString) {
-                if (pointString.trim() !== "") {
-                  var point = pointString.split(",");
-                  boundaryCoordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
-                }
-              });
-              coordinates2.push(boundaryCoordinates);
-            }
-          });
+          var coordinates2 = boundarys2Coordinates(polygon);
           coordinates.push(coordinates2);
         });
 
         geometry.type = "MultiPolygon";
         geometry.coordinates = coordinates;
       } else {
-        var coordinates = [];
-
-        ['outerBoundaryIs', 'innerBoundaryIs'].forEach(function(boundaryIs) {
-          var boundary = placemark.Polygon[boundaryIs];
-          if (boundary) {
-            var boundaryCoordinates = [];
-            var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
-
-            coordinatesString.split(" ").forEach(function(pointString) {
-              if (pointString.trim() !== "") {
-                var point = pointString.split(",");
-                boundaryCoordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
-              }
-            });
-            coordinates.push(boundaryCoordinates);
-          }
-        });
+        var coordinates = boundarys2Coordinates(placemark.Polygon);
 
         geometry.type = "Polygon";
         geometry.coordinates = coordinates;
@@ -402,10 +371,49 @@
     return geometry;
   }
 
+  function boundary2Coordinates(boundary) {
+    var boundaryCoordinates = [];
+    var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
+
+    coordinatesString.split(" ").forEach(function(pointString) {
+      if (pointString.trim() !== "") {
+        var point = pointString.split(",");
+        boundaryCoordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
+      }
+    });
+    return boundaryCoordinates;
+  }
+
+  function boundarys2Coordinates(polygon) {
+    var coordinates = [];
+
+    ['outerBoundaryIs', 'innerBoundaryIs'].forEach(function(boundaryIs) {
+      var boundarys = polygon[boundaryIs];
+      if (boundarys) {
+        var boundaryCoordinates;
+        if (boundarys.forEach) {
+          boundarys.forEach(function(boundary) {
+            boundaryCoordinates = boundary2Coordinates(boundary);
+            coordinates.push(boundaryCoordinates);
+          });
+        } else {
+          boundaryCoordinates = boundary2Coordinates(boundarys);
+          coordinates.push(boundaryCoordinates);
+        }
+      }
+    });
+    return coordinates;
+  }
+
   function abgr2Color(abgr) {
     var color = {};
-    color.hex = "#" + abgr.slice(6, 8) + abgr.slice(4, 6) + abgr.slice(2, 4);
-    color.opacity = Math.round(parseInt(abgr.slice(0, 2), 16) / 255 * 100) / 100;
+    if (typeof abgr === "string" && abgr.length === 8) {
+      color.hex = "#" + abgr.slice(6, 8) + abgr.slice(4, 6) + abgr.slice(2, 4);
+      color.opacity = Math.round(parseInt(abgr.slice(0, 2), 16) / 255 * 100) / 100;
+    } else {
+      color.hex = "#000";
+      color.opacity = 1;
+    }
     return color;
   }
 
