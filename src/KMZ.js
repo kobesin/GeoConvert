@@ -11,7 +11,8 @@
 
       zip.loadAsync(kmz)
         .then(function(result) {
-          for (var f in zip.files) {
+          // for (var f in zip.files) {
+          Object.keys(zip.files).forEach(function(f){
             count++;
 
             var ext = zip.file(f).name.split(".").pop();
@@ -37,7 +38,8 @@
             } else {
               count--;
             }
-          }
+          });
+          // }
         });
     }
 

@@ -299,8 +299,10 @@
         var coordinates = [];
         placemark.LineString.forEach(function(l) {
           var coordinates2 = [];
-          var coordinatesString = l.coordinates.replace(/\t|\n/gi, '');
-          coordinatesString.split(" ").forEach(function(pointString) {
+          // var coordinatesString = l.coordinates.replace(/\t|\n/gi, '');
+          var coordinatesString = l.coordinates.trim();
+
+          coordinatesString.split(/\t|\n|\s/g).forEach(function(pointString) {
             if (pointString.trim() !== "") {
               var point = pointString.split(",");
               coordinates2.push([parseFloat(point[0]), parseFloat(point[1])]);
@@ -313,9 +315,10 @@
         geometry.coordinates = coordinates;
       } else {
         var coordinates = [];
-        var coordinatesString = placemark.LineString.coordinates.replace(/\t|\n/gi, '');
+        // var coordinatesString = placemark.LineString.coordinates.replace(/\t|\n/gi, '');
+        var coordinatesString = placemark.LineString.coordinates.trim();
 
-        coordinatesString.split(" ").forEach(function(pointString) {
+        coordinatesString.split(/\t|\n|\s/g).forEach(function(pointString) {
           if (pointString.trim() !== "") {
             var point = pointString.split(",");
             coordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
@@ -373,9 +376,10 @@
 
   function boundary2Coordinates(boundary) {
     var boundaryCoordinates = [];
-    var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
+    // var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
+    var coordinatesString = boundary.LinearRing.coordinates.trim();
 
-    coordinatesString.split(" ").forEach(function(pointString) {
+    coordinatesString.split(/\t|\n|\s/g).forEach(function(pointString) {
       if (pointString.trim() !== "") {
         var point = pointString.split(",");
         boundaryCoordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
