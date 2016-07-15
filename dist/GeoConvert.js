@@ -474,8 +474,10 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
         var coordinates = [];
         placemark.LineString.forEach(function(l) {
           var coordinates2 = [];
-          var coordinatesString = l.coordinates.replace(/\t|\n/gi, '');
-          coordinatesString.split(" ").forEach(function(pointString) {
+          // var coordinatesString = l.coordinates.replace(/\t|\n/gi, '');
+          var coordinatesString = l.coordinates.trim();
+
+          coordinatesString.split(/\t|\n|\s/g).forEach(function(pointString) {
             if (pointString.trim() !== "") {
               var point = pointString.split(",");
               coordinates2.push([parseFloat(point[0]), parseFloat(point[1])]);
@@ -488,9 +490,10 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
         geometry.coordinates = coordinates;
       } else {
         var coordinates = [];
-        var coordinatesString = placemark.LineString.coordinates.replace(/\t|\n/gi, '');
+        // var coordinatesString = placemark.LineString.coordinates.replace(/\t|\n/gi, '');
+        var coordinatesString = placemark.LineString.coordinates.trim();
 
-        coordinatesString.split(" ").forEach(function(pointString) {
+        coordinatesString.split(/\t|\n|\s/g).forEach(function(pointString) {
           if (pointString.trim() !== "") {
             var point = pointString.split(",");
             coordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
@@ -548,9 +551,10 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 
   function boundary2Coordinates(boundary) {
     var boundaryCoordinates = [];
-    var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
+    // var coordinatesString = boundary.LinearRing.coordinates.replace(/\t|\n/gi, '');
+    var coordinatesString = boundary.LinearRing.coordinates.trim();
 
-    coordinatesString.split(" ").forEach(function(pointString) {
+    coordinatesString.split(/\t|\n|\s/g).forEach(function(pointString) {
       if (pointString.trim() !== "") {
         var point = pointString.split(",");
         boundaryCoordinates.push([parseFloat(point[0]), parseFloat(point[1])]);
@@ -845,7 +849,8 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 
       zip.loadAsync(kmz)
         .then(function(result) {
-          for (var f in zip.files) {
+          // for (var f in zip.files) {
+          Object.keys(zip.files).forEach(function(f){
             count++;
 
             var ext = zip.file(f).name.split(".").pop();
@@ -871,7 +876,8 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
             } else {
               count--;
             }
-          }
+          });
+          // }
         });
     }
 
@@ -1901,22 +1907,6 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 					entity[codeIndex[code]] = value;
 					break;
 				case "10":
-					// var start = index + 1;
-					// if (type === "HATCH") {
-					// 	var edgeType = entityArray[index - 1].trim();
-					// 	if (edgeType === "1") {
-					// 		var vertices = entity.multiVertices[entity.multiVertices.length - 1];
-					// 	}
-
-					// } else if (type === "LWPOLYLINE") {
-					// 	entity.vertices = entity.vertices || [];
-					// 	entity.vertices.push(readDxfPoints(entityArray, start, 10, 20));
-					// } else if (/POINT|MTEXT|XLINE/gi.test(type)) {
-					// 	entity.point = readDxfPoints(entityArray, start, 10, 20, 30);
-					// } else if (/TEXT|LINE/gi.test(type)) {
-					// 	entity.startPoint = readDxfPoints(entityArray, start, 10, 20, 30);
-					// }
-
 					var start = index + 1;
 					switch (type) {
 						case "HATCH":
@@ -1948,11 +1938,6 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 
 					break;
 				case "11":
-					// var start = index + 1;
-					// if (/TEXT|LINE/gi.test(type)) {
-					// 	entity.endPoint = readDxfPoints(entityArray, start, 10, 20, 30);
-					// }
-
 					var start = index + 1;
 					switch (type) {
 						case "HATCH":
@@ -1976,12 +1961,6 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 					entity[codeIndex[code]] = parseFloat(value);
 					break;
 				case "40":
-					// if (type === "TEXT") {
-					// 	entity.textHeight = parseFloat(value);
-					// } else if (/ARC|CIRCLE/gi.test(type)) {
-					// 	entity.radius = parseFloat(value);
-					// }
-
 					switch (type) {
 						case "TEXT":
 							entity.textHeight = parseFloat(value);
