@@ -335,22 +335,6 @@
 					entity[codeIndex[code]] = value;
 					break;
 				case "10":
-					// var start = index + 1;
-					// if (type === "HATCH") {
-					// 	var edgeType = entityArray[index - 1].trim();
-					// 	if (edgeType === "1") {
-					// 		var vertices = entity.multiVertices[entity.multiVertices.length - 1];
-					// 	}
-
-					// } else if (type === "LWPOLYLINE") {
-					// 	entity.vertices = entity.vertices || [];
-					// 	entity.vertices.push(readDxfPoints(entityArray, start, 10, 20));
-					// } else if (/POINT|MTEXT|XLINE/gi.test(type)) {
-					// 	entity.point = readDxfPoints(entityArray, start, 10, 20, 30);
-					// } else if (/TEXT|LINE/gi.test(type)) {
-					// 	entity.startPoint = readDxfPoints(entityArray, start, 10, 20, 30);
-					// }
-
 					var start = index + 1;
 					switch (type) {
 						case "HATCH":
@@ -382,11 +366,6 @@
 
 					break;
 				case "11":
-					// var start = index + 1;
-					// if (/TEXT|LINE/gi.test(type)) {
-					// 	entity.endPoint = readDxfPoints(entityArray, start, 10, 20, 30);
-					// }
-
 					var start = index + 1;
 					switch (type) {
 						case "HATCH":
@@ -410,12 +389,6 @@
 					entity[codeIndex[code]] = parseFloat(value);
 					break;
 				case "40":
-					// if (type === "TEXT") {
-					// 	entity.textHeight = parseFloat(value);
-					// } else if (/ARC|CIRCLE/gi.test(type)) {
-					// 	entity.radius = parseFloat(value);
-					// }
-
 					switch (type) {
 						case "TEXT":
 							entity.textHeight = parseFloat(value);
