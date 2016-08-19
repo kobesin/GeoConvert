@@ -138,13 +138,13 @@
     if (placemark.description) {
       feature.properties.description = placemark.description;
     }
-
-    if (placemark["gx:MultiTrack"]) {
+    
+    if (placemark["gx:Track"] || placemark["gx:MultiTrack"]) {
       var geometry = {};
       var coordinates = [];
 
       var multiTrack = placemark["gx:MultiTrack"];
-      var track = multiTrack["gx:Track"];
+      var track = multiTrack ? multiTrack["gx:Track"] : placemark["gx:Track"];
       var gxCoord = track["gx:coord"];
 
       if (gxCoord) {

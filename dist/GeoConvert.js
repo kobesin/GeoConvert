@@ -313,13 +313,13 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
     if (placemark.description) {
       feature.properties.description = placemark.description;
     }
-
-    if (placemark["gx:MultiTrack"]) {
+    
+    if (placemark["gx:Track"] || placemark["gx:MultiTrack"]) {
       var geometry = {};
       var coordinates = [];
 
       var multiTrack = placemark["gx:MultiTrack"];
-      var track = multiTrack["gx:Track"];
+      var track = multiTrack ? multiTrack["gx:Track"] : placemark["gx:Track"];
       var gxCoord = track["gx:coord"];
 
       if (gxCoord) {
@@ -1478,10 +1478,14 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 			//check polygon is hole?
 			//http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
 			if (!prevX || !prevY) {
-				[prevX, prevY] = [x, y];
+				// [prevX, prevY] = [x, y];
+				prevX = x;
+				prevY = y;
 			}
 			checkCounterClockwise = checkCounterClockwise + (x - prevX) * (y + prevY);
-			[prevX, prevY] = [x, y];
+			// [prevX, prevY] = [x, y];
+			prevX = x;
+			prevY = y;
 
 			if (parts.indexOf(i) !== -1) {
 				coordinates.push(points);
@@ -1495,7 +1499,9 @@ GeoConvert.decode.big5 = new TextDecoder("big5");
 				points = [];
 				coordinates = [];
 				checkCounterClockwise = 0;
-				[prevX, prevY] = [null, null];
+				// [prevX, prevY] = [null, null];
+				prevX = null;
+				prevY = null;
 			}
 		}
 
