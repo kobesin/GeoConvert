@@ -1,6 +1,8 @@
 # GeoConvert
 
-Converting between geojson and gis type data(kml, gpx, shapefile)
+Converting between Geojson and GIS file formats
+
+KML(KMZ), GPX, Shapefile, DXF(unfinished), WKT(unfinished)
 
 Rreference the JavaScript file manually:
 ```html
@@ -32,6 +34,7 @@ geojson to gpx
 ```javascript
 GeoConvert.geojson2Gpx(geojson);
 ```
+
 shapefile to geojson
 ```javascript
 //shapefile is a object that contain shp, dbf, prj? arrayBuffer
@@ -43,4 +46,9 @@ shapefile.dbf = arrayBuffer_dbf;
 shapefile.prj = arrayBuffer_prj;
 
 GeoConvert.shapefile2Geojson(shapefile);
+```
+
+wkt to geojson
+```javascript
+GeoConvert.wkt2Geojson(wkt);
 ```

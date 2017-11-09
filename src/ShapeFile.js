@@ -122,7 +122,6 @@
 			case 1: //Point
 			case 11: //PointZ
 			case 21: //PointM
-
 				readRecord = readPointRecord;
 				break;
 

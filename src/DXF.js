@@ -577,8 +577,6 @@
 	}
 
 	function dxfObject2Geojson(dxf, transitions) {
-		console.log(dxf);
-
 		var geojson = GeoConvert.emptyGeojson();
 
 		//blocks

@@ -1,11 +1,11 @@
 {
   "name": "GeoConvert",
   "version": "1.0.0",
-  "description": "converting between geojson and gis type data",
+  "description": "Converting between Geojson and GIS file formats",
   "main": "index.js",
   "scripts": {
-    "start": "serve -p 3310",
-    "test": "gulp"
+    "start": "http-server -p 3000",
+    "build": "gulp"
   },
   "author": "",
   "license": "ISC",

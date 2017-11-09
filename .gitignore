@@ -33,4 +33,4 @@ node_modules
 .node_repl_history
 **/test_files/
 index.html
-gulpfile.js
+/temp_lib
