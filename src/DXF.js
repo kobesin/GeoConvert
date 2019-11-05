@@ -301,7 +301,7 @@
 			if (blockEnd !== 0) {
 				var blockArray = blocksArray.slice(blockStart, blockEnd);
 
-				block = readDxfBlock(blockArray, 1);
+				var block = readDxfBlock(blockArray, 1);
 				blocks[block.blockName] = block;
 				i = blockEnd;
 			} else {
