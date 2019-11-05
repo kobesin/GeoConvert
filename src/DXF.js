@@ -438,7 +438,7 @@
 			if (entityEnd !== -1) {
 				var entityArray = entitiesArray.slice(entityStart, entityEnd);
 
-				entity = readDxfEntity(entityArray, 0);
+				var entity = readDxfEntity(entityArray, 0);
 				entities.push(entity);
 				i = entityEnd;
 			} else {
