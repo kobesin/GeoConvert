@@ -16,6 +16,7 @@ gulp.task('scripts', function() {
             './src/ShapeFile.js',
             './src/DXF.js',
             './src/WKT.js',
+            './src/export_default.js'
         ])
         .pipe(concat('GeoConvert.js'))
         .pipe(gulp.dest('dist'))
