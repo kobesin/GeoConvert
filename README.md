@@ -37,13 +37,13 @@ GeoConvert.geojson2Gpx(geojson);
 
 shapefile to geojson
 ```javascript
-//shapefile is a object that contain shp, dbf, prj? arrayBuffer
+//shapefile is a object that contain shp, dbf [arrayBuffer], prj? [string]
 var shapefile = {};
 shapefile.shp = arrayBuffer_shp;
 shapefile.dbf = arrayBuffer_dbf;
 
 //optional
-shapefile.prj = arrayBuffer_prj;
+shapefile.prj = string_prj;
 
 GeoConvert.shapefile2Geojson(shapefile);
 ```
