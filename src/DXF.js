@@ -25,6 +25,7 @@
 		"70": "closed"
 	};
 
+	var segmentizeStepAngleInDegrees = 10;
 
 	//dxf2Geojson. file is dxf text.
 	GeoConvert.dxf2Geojson = function(file, toString) {
@@ -105,7 +106,12 @@
 		points.y = readGroupValue(y, data[start + 2]);
 
 		if (z !== undefined) {
-			points.z = readGroupValue(z, data[start + 4]);
+      if (data[start + 3] == z) {
+        points.z = readGroupValue(z, data[start + 4]);
+      } else {
+        points.z = undefined
+      }
+			
 		}
 		return points;
 	}
@@ -301,7 +307,7 @@
 			if (blockEnd !== 0) {
 				var blockArray = blocksArray.slice(blockStart, blockEnd);
 
-				block = readDxfBlock(blockArray, 1);
+				var block = readDxfBlock(blockArray, 1);
 				blocks[block.blockName] = block;
 				i = blockEnd;
 			} else {
@@ -316,7 +322,8 @@
 		var length = entityArray.length;
 		var entity = {};
 		var code, value, type;
-		var edgeType = false;
+    var edgeType = false;
+    var vertx, vertxPrevious;
 
 		while (index < length) {
 			code = entityArray[index].trim();
@@ -351,8 +358,20 @@
 							break;
 						case "LWPOLYLINE":
 							entity.vertices = entity.vertices || [];
-							entity.vertices.push(readDxfPoints(entityArray, start, 10, 20));
+							vertx = readDxfPoints(entityArray, start, 10, 20, 42)
+							if ( vertxPrevious ) {
+								entity.vertices = entity.vertices.concat(bulge2arc(vertxPrevious.x,vertxPrevious.y,vertxPrevious.z,vertx.x,vertx.y,segmentizeStepAngleInDegrees))
+							} else { 
+								entity.vertices.push({x:vertx.x,y:vertx.y})
+							}
+							if (vertx.z) {
+								vertxPrevious = vertx
+							} else {
+								vertxPrevious = undefined
+							}
 							break;
+            case "ARC":
+            case "CIRCLE":
 						case "POINT":
 						case "MTEXT":
 						case "XLINE":
@@ -385,7 +404,11 @@
 				case "39":
 				case "48":
 				case "50":
+          case "ARC":
+            entity.startAngle = parseFloat(value)
 				case "51":
+          case "ARC":
+            entity.endAngle = parseFloat(value)
 					entity[codeIndex[code]] = parseFloat(value);
 					break;
 				case "40":
@@ -438,7 +461,7 @@
 			if (entityEnd !== -1) {
 				var entityArray = entitiesArray.slice(entityStart, entityEnd);
 
-				entity = readDxfEntity(entityArray, 0);
+				var entity = readDxfEntity(entityArray, 0);
 				entities.push(entity);
 				i = entityEnd;
 			} else {
@@ -515,13 +538,73 @@
 		});
 		return lineString;
 	}
+	
+	function angle(x1,y1, x2,y2) {
+		return Math.atan2(y2-y1, x2-x1)
+	}
+	
+	function polar(x1,y1, phi, dist) {
+		return [x1 + dist * Math.cos(phi), y1 + dist * Math.sin(phi)]
+	}
+	
+	function bulge2arc(x1,y1,bulge,x2,y2,stepAngle) {
+	
+		var dist = Math.sqrt((x2-x1)**2+(y2-y1)**2)
+		var a = Math.atan(bulge) * 4.0
+	
+		var theta = 4.0 * Math.atan(Math.abs(bulge))
+		var radius = (dist/2)/Math.sin(theta/2)
+		var gamma = (Math.PI - theta) / 2.0
+		var phi = angle(x1,y1, x2,y2) + gamma * Math.sign(bulge)
+	
+		
+		var center = polar(x1,y1, phi, radius)
+	
+		var startAngle = Math.acos((x1 - center[0]) / radius)
+		if (Math.sign(y1 - center[1]) < 0) {
+		startAngle = (2.0 * Math.PI) - startAngle
+		}
+		var endAngle = startAngle + a
+	
+		return segmentize(center[0], center[1], radius, 180*startAngle/Math.PI, 180*endAngle/Math.PI, stepAngle)
+	
+	}
+
+	function getSegment(centerx,centery,angle,radius) {
+		return {
+		x: centerx + Math.cos(angle*Math.PI/180)*radius,
+		y: centery + Math.sin(angle*Math.PI/180)*radius
+		}
+	}
+
+	function segmentize(centerx,centery,radius,startAngle,endAngle,stepAngle) {
+		var p, test
+		var v = []
+		if (endAngle < startAngle) {
+		stepAngle = -stepAngle
+		test = function(a,b) {return a > b}
+		} else {
+		test = function(a,b) {return a < b}
+		}
+		for (var a = startAngle; test(a, endAngle); a += stepAngle){
+		v.push(getSegment(centerx,centery,a,radius))
+		}
+		v.push(getSegment(centerx,centery, endAngle,radius))
+		return v
+	}
 
 	function dxfEntity2Feature(entity, transitions) {
 		var geometry = {};
 		switch (entity.entityType) {
 			case "ARC":
+          		geometry.type = "LineString";
+          		geometry.coordinates = dxf2GeojsonPolyline(segmentize(entity.point.x, entity.point.y, entity.radius, entity.startAngle, entity.endAngle, segmentizeStepAngleInDegrees), transitions);
 				break;
 			case "CIRCLE":
+				geometry.type = "LineString";
+				geometry.coordinates = dxf2GeojsonPolyline(segmentize(entity.point.x, entity.point.y, entity.radius, 0, 360, segmentizeStepAngleInDegrees), transitions);
+				geometry.coordinates.push(geometry.coordinates[0]);
+				entity.closed = 1
 				break;
 			case "INSERT":
 				break;
@@ -565,7 +648,8 @@
 				"textHeight",
 				"textStyleName",
 				"layerName",
-				"entityType"
+				"entityType",
+				"closed"
 			].forEach(function(name) {
 				if (entity[name] !== undefined) {
 					feature.properties[name] = entity[name];
